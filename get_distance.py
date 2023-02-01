@@ -20,8 +20,8 @@ from creds import api_key
 
 
 def get_travel_time(origins, destinations, mode, arrival_time="now"):
-    origins = [point_to_api_string(point) for point in origins]
-    destinations = [point_to_api_string(point) for point in destinations]
+    origins = [_point_to_api_string(point) for point in origins]
+    destinations = [_point_to_api_string(point) for point in destinations]
     url = f"""https://maps.googleapis.com/maps/api/distancematrix/json?destinations={"%7C".join(destinations)}&language=en-EN&mode={mode}&origins={"%7C".join(origins)}&arrival_time={arrival_time}&key={api_key}"""
     payload = {}
     headers = {}
@@ -39,8 +39,8 @@ def get_travel_time(origins, destinations, mode, arrival_time="now"):
 
 
 def get_travel_time_multi_origins(destinations, origins, mode, departure_time="now"):
-    origins = [point_to_api_string(point) for point in origins]
-    destinations = [point_to_api_string(point) for point in destinations]
+    origins = [_point_to_api_string(point) for point in origins]
+    destinations = [_point_to_api_string(point) for point in destinations]
     url = f"""https://maps.googleapis.com/maps/api/distancematrix/json?destinations={"%7C".join(destinations)}&language=en-EN&mode={mode}&origins={"%7C".join(origins)}&departure_time={departure_time}&key={api_key}"""
     payload = {}
     headers = {}
@@ -78,7 +78,7 @@ def load_census_tracts(
 
     muni_census_tracts["centroid"] = [ct.centroid for ct in muni_census_tracts.geometry]
     muni_census_tracts["centroid_string"] = [
-        point_to_api_string(centroid) for centroid in muni_census_tracts["centroid"]
+        _point_to_api_string(centroid) for centroid in muni_census_tracts["centroid"]
     ]
     for i in range(0, len(muni_census_tracts), batch_size):
         batch = muni_census_tracts[i : min(len(muni_census_tracts), i + batch_size)]
@@ -109,7 +109,7 @@ def load_census_tracts(
     combined_result.to_file(f"{output_filename}.shp")
 
 
-def point_to_api_string(point):
+def _point_to_api_string(point):
     """
     Formats
     """
