@@ -1,22 +1,22 @@
+import math
 import re
 import urllib
 import random
-import numpy as np
-import math
-from math import sin, cos, sqrt, atan2
 from collections import OrderedDict
+from itertools import permutations
+from json import loads
 from urllib import request
 from urllib.request import urlopen
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import requests
 import shapely
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
-import geopandas as gpd
-from itertools import permutations
-import requests
-from json import loads
-import pandas as pd
 
-from config import api_key
+from creds import api_key
 
 
 def get_travel_time(origins, destinations, mode, arrival_time="now"):
