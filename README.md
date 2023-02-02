@@ -1,6 +1,6 @@
 # commute-mode-ratios
 
-This repo is for calculating the ratio between driving and transit commute times across a city at a given time of day, using the Google Distance Matrix API. Results are given in both CSV and Shapefile formats.
+This repo is for calculating the ratio between driving and transit commute times across a city at a given time of day, using the Google Distance Matrix API. Results are output in both CSV and Shapefile formats.
 
 ## Setup
 
