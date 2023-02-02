@@ -63,6 +63,7 @@ def load_census_tracts(
     municipality_name,
     output_filename,
     batch_size=25,
+    max_entries=2,
 ):
     dfs = []
 
@@ -73,6 +74,8 @@ def load_census_tracts(
     muni_census_tracts = census_tracts.loc[
         census_tracts.within(list(muni_boundaries.geometry)[0])
     ]
+
+    muni_census_tracts = muni_census_tracts[:max_entries]
 
     muni_census_tracts.geometry = muni_census_tracts.geometry.to_crs(4326)
 
@@ -86,13 +89,11 @@ def load_census_tracts(
             batch.centroid,
             [Point(-79.380851, 43.645570)],
             "driving",
-            departure_time="1670018400",
         )
         batch["transit_duration"] = get_travel_time_multi_origins(
             batch.centroid,
             [Point(-79.380851, 43.645570)],
             "transit",
-            departure_time="1670018400",
         )
         batch["transit_to_drive_ratio"] = [
             t / d if d > 0 else 0
@@ -105,8 +106,11 @@ def load_census_tracts(
 
     combined_result = pd.concat(dfs)
     combined_result.to_csv(f"{output_filename}.csv")
-    combined_result = gpd.GeoDataFrame(combined_result, crs="epgsg:4326")
-    combined_result.to_file(f"{output_filename}.shp")
+    combined_result.drop(
+        "centroid", axis="columns", inplace=True
+    )  # Multiple geom columns cause problems for shp export
+    combined_result_gdf = gpd.GeoDataFrame(combined_result, crs="epgsg:4326")
+    combined_result_gdf.to_file(f"{output_filename}.shp")
 
 
 def _point_to_api_string(point):
@@ -114,11 +118,3 @@ def _point_to_api_string(point):
     Formats
     """
     return f"{point.y},{point.x}"
-
-
-load_census_tracts(
-    "/Users/zuzubak/Downloads/lda_000b21a_e/lda_000b21a_e.shp",
-    "/Users/zuzubak/Downloads/lcd_000a16a_e/lcd_000a16a_e.shp",
-    "Toronto",
-    "Toronto_5pm_2Dec_census_blocks_forecasted",
-)
