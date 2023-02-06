@@ -20,8 +20,6 @@ from creds import api_key
 
 
 def get_travel_time(origins, destinations, mode, arrival_time="now"):
-    origins = [_point_to_api_string(point) for point in origins]
-    destinations = [_point_to_api_string(point) for point in destinations]
     url = f"""https://maps.googleapis.com/maps/api/distancematrix/json?destinations={"%7C".join(destinations)}&language=en-EN&mode={mode}&origins={"%7C".join(origins)}&arrival_time={arrival_time}&key={api_key}"""
     payload = {}
     headers = {}
@@ -39,8 +37,6 @@ def get_travel_time(origins, destinations, mode, arrival_time="now"):
 
 
 def get_travel_time_multi_origins(destinations, origins, mode, departure_time="now"):
-    origins = [_point_to_api_string(point) for point in origins]
-    destinations = [_point_to_api_string(point) for point in destinations]
     url = f"""https://maps.googleapis.com/maps/api/distancematrix/json?destinations={"%7C".join(destinations)}&language=en-EN&mode={mode}&origins={"%7C".join(origins)}&departure_time={departure_time}&key={api_key}"""
     payload = {}
     headers = {}
@@ -57,16 +53,46 @@ def get_travel_time_multi_origins(destinations, origins, mode, departure_time="n
     return distance_matrix[0]
 
 
-def load_census_tracts(
+def compute_commute_mode_ratios(
+    locations_df,
+    commute_hub,
+    output_filename,
+    batch_size=25,
+):
+
+    location_batches = list(_batch_locations_for_api_call(locations_df, batch_size))
+    for batch in location_batches:
+        batch["driving_duration"] = get_travel_time_multi_origins(
+            batch["centroid"],
+            [commute_hub],
+            "driving",
+        )
+        batch["transit_duration"] = get_travel_time_multi_origins(
+            batch["centroid"],
+            [commute_hub],
+            "transit",
+        )
+        batch["transit_to_drive_ratio"] = [
+            t / d if d > 0 else np.nan
+            for t, d in zip(
+                batch["transit_duration"],
+                batch["driving_duration"],
+            )
+        ]
+
+    # Compile and export
+    combined_result = pd.concat(location_batches)
+    combined_result.to_csv(f"{output_filename}.csv")
+    combined_result_gdf = gpd.GeoDataFrame(combined_result, crs="epgsg:4326")
+    combined_result_gdf.to_file(f"{output_filename}.shp")
+
+
+def load_location_data(
     census_tract_shp_path,
     municipalities_shapefile_path,
     municipality_name,
-    output_filename,
-    batch_size=25,
     max_entries=2,
 ):
-    dfs = []
-
     census_tracts = gpd.read_file(census_tract_shp_path)
     municipalities = gpd.read_file(municipalities_shapefile_path)
     muni_boundaries = municipalities.loc[municipalities.CDNAME == municipality_name]
@@ -79,42 +105,19 @@ def load_census_tracts(
 
     muni_census_tracts.geometry = muni_census_tracts.geometry.to_crs(4326)
 
-    muni_census_tracts["centroid"] = [ct.centroid for ct in muni_census_tracts.geometry]
-    muni_census_tracts["centroid_string"] = [
-        _point_to_api_string(centroid) for centroid in muni_census_tracts["centroid"]
+    muni_census_tracts["centroid"] = [
+        _point_to_api_string(ct.centroid) for ct in muni_census_tracts.geometry
     ]
-    for i in range(0, len(muni_census_tracts), batch_size):
-        batch = muni_census_tracts[i : min(len(muni_census_tracts), i + batch_size)]
-        batch["driving_duration"] = get_travel_time_multi_origins(
-            batch.centroid,
-            [Point(-79.380851, 43.645570)],
-            "driving",
-        )
-        batch["transit_duration"] = get_travel_time_multi_origins(
-            batch.centroid,
-            [Point(-79.380851, 43.645570)],
-            "transit",
-        )
-        batch["transit_to_drive_ratio"] = [
-            t / d if d > 0 else 0
-            for t, d in zip(
-                batch["transit_duration"],
-                batch["driving_duration"],
-            )
-        ]
-        dfs.append(batch)
+    return muni_census_tracts
 
-    combined_result = pd.concat(dfs)
-    combined_result.to_csv(f"{output_filename}.csv")
-    combined_result.drop(
-        "centroid", axis="columns", inplace=True
-    )  # Multiple geom columns cause problems for shp export
-    combined_result_gdf = gpd.GeoDataFrame(combined_result, crs="epgsg:4326")
-    combined_result_gdf.to_file(f"{output_filename}.shp")
+
+def _batch_locations_for_api_call(locations_df, batch_size):
+    for i in range(0, len(locations_df), batch_size):
+        yield locations_df[i : min(len(locations_df), i + batch_size)]
 
 
 def _point_to_api_string(point):
     """
-    Formats
+    Formats a shapely Point to the lat,lon string format expected by Google
     """
     return f"{point.y},{point.x}"
