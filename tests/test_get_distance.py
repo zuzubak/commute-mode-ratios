@@ -25,7 +25,7 @@ def test_load_location_data():
         _MUNICIPALITY,
         max_entries=2,
     )
-    1 == 1
+    assert len(locations_gdf) == 2
 
 
 def test_compute_commute_mode_ratios():
