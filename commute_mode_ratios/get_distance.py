@@ -83,7 +83,7 @@ def compute_commute_mode_ratios(
     # Compile and export
     combined_result = pd.concat(location_batches)
     combined_result.to_csv(f"{output_filename}.csv")
-    combined_result_gdf = gpd.GeoDataFrame(combined_result, crs="epgsg:4326")
+    combined_result_gdf = gpd.GeoDataFrame(combined_result, crs=4326)
     combined_result_gdf.to_file(f"{output_filename}.shp")
 
 
