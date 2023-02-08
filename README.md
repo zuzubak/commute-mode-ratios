@@ -19,3 +19,7 @@ To create an anaconda environment to run the code in, run:
 
 ## Usage
 
+Use load_location_data to create a GeoDataFrame containing the locations to be included,
+then pass it to compute_commute_mode_ratios, which will handle the API calls and save the 
+results to file.
+
