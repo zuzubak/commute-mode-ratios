@@ -4,6 +4,11 @@ This repo is for calculating the ratio between driving and transit commute times
 
 ## Setup
 
+### Enviroment
+To create a virtual environment to run the code, run:
+
+`conda env create -f environment.yml`
+
 ### Data
 Before getting started, you'll need to download the zipped shapefiles for Canadian census tracts, and census subdivisions.
 These can be found at the URL below. Select the "shapefile" option.

@@ -1,0 +1,9 @@
+name: commute_mode_ratios
+dependencies:
+  - geopandas
+  - numpy
+  - pandas
+  - python=3.8.*
+  - pytest
+  - requests
+  - shapely
